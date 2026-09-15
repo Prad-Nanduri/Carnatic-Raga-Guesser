@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import WaveformPlayer from "@/components/WaveformPlayer";
 
 interface Track {
   id: string;
@@ -72,7 +73,7 @@ export default function GalleryPage() {
                   </p>
                 </div>
               </div>
-              <audio controls src={t.audioUrl} className="mt-2 w-full" />
+              <div className="mt-2"><WaveformPlayer src={t.audioUrl} /></div>
             </li>
           ))}
         </ul>
