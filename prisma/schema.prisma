@@ -82,15 +82,38 @@ enum JobStatus {
   failed
 }
 
+enum GenerationMode {
+  alapana // unmetered, tala-less raga elaboration (default)
+  kriti   // composed, lyrics + tala
+}
+
+enum Instrument {
+  voice
+  violin
+  veena
+  venu_flute
+  sitar_fusion // Hindustani-style (fusion), not native Carnatic
+}
+
+enum InputSource {
+  manual_selection
+  voice_sample
+}
+
 model GenerationJob {
   id        String    @id @default(cuid())
   userId    String    @map("user_id")
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lyrics    String
-  mood      String
-  genre     String
+  generationMode GenerationMode @default(alapana) @map("generation_mode")
+  instrument     Instrument     @default(veena)
+  durationSeconds Int           @default(10) @map("duration_seconds")
+  inputSource    InputSource    @default(manual_selection) @map("input_source")
+  ragaSuggestionConfidence Float? @map("raga_suggestion_confidence")
+  lyrics    String?
+  mood      String?
+  genre     String?
   raga      String
-  tala      String
+  tala      String?
   status    JobStatus @default(pending)
   prompt    String?
   audioUrl  String?   @map("audio_url")
@@ -114,7 +137,7 @@ model Track {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   title           String
   raga            String
-  tala            String
+  tala            String?
   audioUrl        String        @map("audio_url")
   fileSizeBytes   BigInt?       @map("file_size_bytes")
   isPublic        Boolean       @default(false) @map("is_public")

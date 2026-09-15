@@ -8,12 +8,17 @@ interface Track {
   id: string;
   title: string;
   raga: string;
-  tala: string;
+  tala: string | null;
   audioUrl: string;
   playCount: number;
   createdAt: string;
   _count: { likes: number };
   user: { name: string };
+  generationJob: {
+    generationMode: "alapana" | "kriti";
+    instrument: string;
+    durationSeconds: number;
+  };
 }
 
 interface TracksResponse {
@@ -46,7 +51,7 @@ export default function GalleryPage() {
         <div>
           <h1 className="heading">Gallery</h1>
           <p className="subtle mt-2">
-            Public tracks, composed by raga and tala.
+            Public alapanas and kritis, composed by raga.
           </p>
         </div>
         <label className="flex items-center gap-3">
@@ -77,7 +82,14 @@ export default function GalleryPage() {
                 </p>
               </div>
               <p className="subtle mt-1">
-                {t.raga} · {t.tala} · by {t.user.name}
+                {t.generationJob.generationMode === "alapana"
+                  ? "Alapana"
+                  : "Kriti"}{" "}
+                · {t.raga}
+                {t.tala ? ` · ${t.tala}` : ""}
+                {" · "}
+                {t.generationJob.instrument.replace("_", " ")} ·{" "}
+                {t.generationJob.durationSeconds}s · by {t.user.name}
               </p>
               <div className="mt-4"><WaveformPlayer src={t.audioUrl} /></div>
             </li>

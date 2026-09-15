@@ -1,11 +1,119 @@
 /**
  * Raga/Tala selection engine — v1 rule-based mapping.
  *
- * Maps (mood, genre) pairs to a Carnatic raga and tala using a curated
- * lookup table. An ML-based raga classifier that infers mood/genre from
- * the lyrics themselves is a documented v2 stretch goal — it is NOT
- * implemented here.
+ * Raga reference data: arohana/avarohana in standard school notation
+ * (S R1 R2 R3 G1 G2 G3 M1 M2 P D1 D2 D3 N1 N2 N3) sourced from the
+ * karnatik.com raga reference pages (https://www.karnatik.com/ragas.shtml).
+ * Characteristic-phrase descriptors are plain-English notes derived from
+ * those scales, not transcribed sancharas — marked as such per entry.
+ * Sindhubhairavi's scale varies by school; see its TODO note.
+ *
+ * The (mood, genre) -> raga rule table remains the curated mapping below.
+ * Tala assignment now applies ONLY to kriti mode; alapana is unmetered
+ * and carries no tala. An ML-based classifier is a documented v2 stretch
+ * goal — NOT implemented.
  */
+
+export interface RagaTheory {
+  /** Ascending scale, e.g. "S R2 G3 P N3 S" */
+  arohana: string;
+  /** Descending scale */
+  avarohana: string;
+  /** Plain-English phrase/gamaka descriptors for prompt construction. */
+  phrases: string[];
+  /** Where the scale data came from. */
+  source: string;
+}
+
+export const RAGA_DATA: Record<string, RagaTheory> = {
+  // Source for every scale below: https://www.karnatik.com/ragas.shtml
+  // (standard school notation). Phrases are derived descriptors, not
+  // transcribed sancharas.
+  Hamsadhwani: {
+    arohana: "S R2 G3 P N3 S",
+    avarohana: "S N3 P G3 R2 S",
+    phrases: [
+      "direct, bright ascent with minimal ornamentation",
+      "emphatic pa–ni leaps",
+      "crisp landing on sa",
+    ],
+    source: "karnatik.com raga reference",
+  },
+  Sindhubhairavi: {
+    // Scale varies by school (chatushruti/shuddha mixes appear across
+    // listings); this is the commonly cited karnatik.com form.
+    // TODO: verify avarohana against a second source before treating as
+    // authoritative.
+    arohana: "S R2 G2 M1 G1 P D1 N2 S",
+    avarohana: "S N2 S D1 P M1 G2 R1 S N2 S",
+    phrases: [
+      "grief-laden oscillation between dhaivatas",
+      "pleading slides from ga into ma",
+      "karuna-weighted, speech-like phrasing",
+    ],
+    source: "karnatik.com raga reference (scale varies by school)",
+  },
+  Mohanam: {
+    arohana: "S R2 G3 P D2 S",
+    avarohana: "S D2 P G3 R2 S",
+    phrases: [
+      "sweet pentatonic contours",
+      "smooth pa–da returns",
+      "even, unhurried phrase arcs",
+    ],
+    source: "karnatik.com raga reference",
+  },
+  Kharaharapriya: {
+    arohana: "S R2 G2 M1 P D2 N2 S",
+    avarohana: "S N2 D2 P M1 G2 R2 S",
+    phrases: [
+      "leisurely gamaka on ri and ni",
+      "dignified octave-spanning phrases",
+      "restful emphasis on sa and pa",
+    ],
+    source: "karnatik.com raga reference",
+  },
+  Kalyani: {
+    arohana: "S R2 G3 M2 P D2 N3 S",
+    avarohana: "S N3 D2 P M2 G3 R2 S",
+    phrases: [
+      "luminous prati-madhyama emphasis",
+      "expansive ma–da oscillations",
+      "long, soaring arcs to tara sa",
+    ],
+    source: "karnatik.com raga reference",
+  },
+  Nattai: {
+    arohana: "S R3 G3 M1 P D3 N3 S",
+    avarohana: "S N3 P M1 G3 M1 R3 S",
+    phrases: [
+      "sharp, declamatory ascending sweeps",
+      "assertive antara gandhara",
+      "martial leaps over the middle register",
+    ],
+    source: "karnatik.com raga reference",
+  },
+  Shanmukhapriya: {
+    arohana: "S R2 G2 M2 P D1 N2 S",
+    avarohana: "S N2 D1 P M2 G2 R2 S",
+    phrases: [
+      "meditative pauses on sa and pa",
+      "contemplative ri–ga slides",
+      "somber shading around the flattened dha",
+    ],
+    source: "karnatik.com raga reference",
+  },
+  Shubhapantuvarali: {
+    arohana: "S R1 G2 M2 P D1 N3 S",
+    avarohana: "S N3 D1 P M2 G2 R1 S",
+    phrases: [
+      "plaintive shuddha rishabha leaning into ga",
+      "sigh-like descents through dha",
+      "sparse, suspended phrasing",
+    ],
+    source: "karnatik.com raga reference",
+  },
+};
 
 export interface RagaTalaRule {
   mood: string;
@@ -19,6 +127,11 @@ export interface RagaTalaRule {
 export interface RagaTalaSelection {
   raga: string;
   tala: string;
+  justification: string;
+}
+
+export interface RagaSuggestion {
+  raga: string;
   justification: string;
 }
 
@@ -99,10 +212,30 @@ const RULES: RagaTalaRule[] = [
 
 const normalize = (s: string) => s.trim().toLowerCase();
 
-const KNOWN_RAGAS = new Set(RULES.map((r) => r.raga.toLowerCase()));
+/** Resolve a user-supplied raga name against the curated list; null if unknown. */
+export function resolveRaga(name: string): string | null {
+  const n = normalize(name);
+  const hit = RULES.find((r) => r.raga.toLowerCase() === n);
+  return hit ? hit.raga : null;
+}
 
 /**
- * Select a raga and tala for a composition.
+ * Suggest a raga from mood/genre — no tala, no meter. This is the alapana
+ * path's raga helper; kriti mode uses selectRagaTala for the full pairing.
+ */
+export function suggestRaga(mood: string, genre: string): RagaSuggestion {
+  const m = normalize(mood);
+  const g = normalize(genre);
+  const rule =
+    RULES.find((r) => r.mood === m && r.genre === g) ??
+    RULES.find((r) => r.mood === m) ??
+    RULES.find((r) => r.genre === g) ??
+    RULES.find((r) => r.raga === "Mohanam")!;
+  return { raga: rule.raga, justification: rule.justification };
+}
+
+/**
+ * Select a raga AND tala — kriti (composed, metered) mode only.
  *
  * @param mood    Free-form mood string; matched case-insensitively. Unknown
  *                moods fall back to the universal-appeal rule (Mohanam).
@@ -130,8 +263,9 @@ export function selectRagaTala(
 
   let raga = rule.raga;
   let justification = rule.justification;
-  if (override && KNOWN_RAGAS.has(normalize(override))) {
-    raga = RULES.find((r) => r.raga.toLowerCase() === normalize(override))!.raga;
+  const resolved = override ? resolveRaga(override) : null;
+  if (resolved) {
+    raga = resolved;
     justification = `User override to ${raga}; ${rule.justification}`;
   }
 
