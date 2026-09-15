@@ -113,8 +113,7 @@ a {
   }
   .field {
     @apply min-h-11 w-full rounded-md border border-line bg-card px-3 py-2
-      text-sm text-ink placeholder:text-ink-soft
-      focus:border-bronze focus:outline-none;
+      text-sm text-ink placeholder:text-ink-soft focus:border-bronze;
   }
   .card {
     @apply rounded-lg border border-line bg-card;
