@@ -11,7 +11,12 @@ interface Job {
   id: string;
   status: "pending" | "processing" | "complete" | "failed";
   raga: string;
-  tala: string;
+  tala: string | null;
+  generationMode: "alapana" | "kriti";
+  instrument: string;
+  durationSeconds: number;
+  inputSource: string;
+  ragaSuggestionConfidence: number | null;
   audioUrl: string | null;
   prompt: string | null;
   errorMessage: string | null;
@@ -85,7 +90,11 @@ export default function GeneratePage() {
           {STATUS_LABEL[job.status]}
         </span>
       </div>
-      <p className="subtle mt-2">Tala: {job.tala}</p>
+      <p className="subtle mt-2">
+        {job.generationMode === "alapana" ? "Alapana" : "Kriti"} ·{" "}
+        {job.instrument.replace("_", " ")} · {job.durationSeconds}s
+        {job.tala ? ` · ${job.tala}` : ""}
+      </p>
 
       {working && (
         <div className="mt-8">

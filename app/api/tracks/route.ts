@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         _count: { select: { likes: true } },
         user: { select: { name: true } },
+        generationJob: {
+          select: {
+            generationMode: true,
+            instrument: true,
+            durationSeconds: true,
+          },
+        },
       },
     }),
     prisma.track.count({ where }),
