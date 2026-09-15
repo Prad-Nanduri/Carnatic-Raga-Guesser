@@ -22,7 +22,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const instrument = INSTRUMENTS.includes(body?.instrument) ? body.instrument : null;
-  const durationSeconds = ALLOWED_DURATIONS.includes(body?.durationSeconds)
+  const engine = body?.engine === "musicgen" ? "musicgen" : "procedural";
+  // MusicGen Spaces return a single ~10s prediction — only 10s is honest.
+  const allowedDurations = engine === "musicgen" ? [10] : ALLOWED_DURATIONS;
+  const durationSeconds = allowedDurations.includes(body?.durationSeconds)
     ? (body.durationSeconds as number)
     : null;
   const inputSource =
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
   if (!durationSeconds) {
     return NextResponse.json(
-      { error: `durationSeconds must be one of ${ALLOWED_DURATIONS.join("/")}` },
+      { error: `durationSeconds must be one of ${allowedDurations.join("/")}` },
       { status: 400 },
     );
   }
@@ -64,6 +67,7 @@ export async function POST(req: NextRequest) {
       instrument,
       durationSeconds,
       inputSource,
+      engine,
       ragaSuggestionConfidence: confidence,
       humGuessedRaga:
         typeof body?.ragaGuessed === "string" ? body.ragaGuessed : null,
