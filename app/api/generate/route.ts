@@ -3,13 +3,17 @@ import { waitUntil } from "@vercel/functions";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { selectRagaTala, suggestRaga, resolveRaga } from "@/lib/raga-engine/select";
+import { suggestRaga, resolveRaga } from "@/lib/raga-engine/select";
 import { generateTrack, ALLOWED_DURATIONS } from "@/lib/generation/generateTrack";
 
 export const maxDuration = 300;
 
-const INSTRUMENTS = ["voice", "violin", "veena", "venu_flute", "sitar_fusion"] as const;
+const INSTRUMENTS = [
+  "voice", "violin", "veena", "venu_flute",
+  "nadaswaram", "saxophone", "sitar_fusion",
+] as const;
 
+// Alapana-only flow: unmetered improvisation, no tala, no lyrics.
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
@@ -17,7 +21,6 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const mode = body?.generationMode === "kriti" ? "kriti" : "alapana";
   const instrument = INSTRUMENTS.includes(body?.instrument) ? body.instrument : null;
   const durationSeconds = ALLOWED_DURATIONS.includes(body?.durationSeconds)
     ? (body.durationSeconds as number)
@@ -28,6 +31,8 @@ export async function POST(req: NextRequest) {
     typeof body?.ragaSuggestionConfidence === "number"
       ? body.ragaSuggestionConfidence
       : null;
+  const mood = typeof body?.mood === "string" ? body.mood : null;
+  const genre = typeof body?.genre === "string" ? body.genre : null;
 
   if (!instrument) {
     return NextResponse.json({ error: "instrument is required" }, { status: 400 });
@@ -39,52 +44,30 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let raga: string | null;
-  let tala: string | null = null;
-  let lyrics: string | null = null;
-  const mood = typeof body?.mood === "string" ? body.mood : null;
-  const genre = typeof body?.genre === "string" ? body.genre : null;
-
-  if (mode === "kriti") {
-    // Kriti path: composed piece — lyrics, mood, genre required; tala assigned.
-    if (!body?.lyrics || !mood || !genre) {
-      return NextResponse.json(
-        { error: "kriti mode requires lyrics, mood and genre" },
-        { status: 400 },
-      );
-    }
-    const sel = selectRagaTala(mood, genre, body.raga);
-    raga = sel.raga;
-    tala = sel.tala;
-    lyrics = body.lyrics;
-  } else {
-    // Alapana path: raga is king — direct selection wins; mood/genre only
-    // nudge the engine when no explicit raga was given.
-    raga = typeof body?.raga === "string" ? resolveRaga(body.raga) : null;
-    if (!raga && mood && genre) {
-      raga = suggestRaga(mood, genre).raga;
-    }
-    if (!raga) {
-      return NextResponse.json(
-        { error: "alapana mode requires a raga (or mood+genre for a suggestion)" },
-        { status: 400 },
-      );
-    }
+  // Raga: an explicit selection wins (manual or hum-confirmed); mood/genre
+  // only nudge the engine when no raga was given.
+  let raga = typeof body?.raga === "string" ? resolveRaga(body.raga) : null;
+  if (!raga && mood && genre) {
+    raga = suggestRaga(mood, genre).raga;
+  }
+  if (!raga) {
+    return NextResponse.json(
+      { error: "a raga is required (pick one, or use hum-it to match)" },
+      { status: 400 },
+    );
   }
 
   const job = await prisma.generationJob.create({
     data: {
       userId: session.user.id,
-      generationMode: mode,
+      generationMode: "alapana",
       instrument,
       durationSeconds,
       inputSource,
       ragaSuggestionConfidence: confidence,
-      lyrics,
       mood,
       genre,
       raga,
-      tala,
       status: "pending",
     },
   });

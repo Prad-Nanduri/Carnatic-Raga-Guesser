@@ -92,6 +92,8 @@ enum Instrument {
   violin
   veena
   venu_flute
+  nadaswaram
+  saxophone
   sitar_fusion // Hindustani-style (fusion), not native Carnatic
 }
 

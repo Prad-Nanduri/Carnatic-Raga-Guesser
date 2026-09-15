@@ -37,6 +37,8 @@ const INSTRUMENT_TIMBRE: Record<string, string> = {
   violin: "solo Carnatic violin with lyrical slides and gamaka bowing",
   veena: "solo Saraswati veena, plucked and resonant",
   venu_flute: "solo Carnatic bamboo venu flute, breathy and mellow",
+  nadaswaram: "solo nadaswaram, reedy and majestic double-reed",
+  saxophone: "solo saxophone in the Carnatic Kadri Gopalnath style, gamaka-rich",
   sitar_fusion: "solo sitar in a Hindustani-style fusion treatment",
 };
 
@@ -58,31 +60,15 @@ export function buildPrompt(job: {
       ? `${[job.mood, job.genre].filter(Boolean).join(" ")} character, `
       : "";
 
-  if (job.generationMode === "alapana") {
-    return [
-      `unmetered alapana improvisation in Carnatic raga ${job.raga}`,
-      `${timbre} over a quiet continuous tanpura drone`,
-      `free rhythm, no percussion, no tala, no meter`,
-      theory
-        ? `exploring the raga's character — ${theory.phrases.join("; ")}; arohana ${theory.arohana}, avarohana ${theory.avarohana}`
-        : `exploring the raga's characteristic phrases`,
-      `${moodPart}roughly ${job.durationSeconds} seconds`,
-    ].join(", ");
-  }
-
-  // Kriti mode: composed, lyrics + tala.
-  const beats = job.tala?.match(/\((\d+) beats\)/)?.[1];
   return [
-    `Carnatic instrumental in raga ${job.raga}`,
-    `veena lead with Carnatic vocal ornamentation, mridangam and violin accompaniment`,
-    `${moodPart}`.trimEnd(),
-    beats
-      ? `${beats}-beat tala cycle (${job.tala!.replace(/\s*\(\d+ beats\)/, "")})`
-      : `tala cycle: ${job.tala}`,
-    `inspired by lyrics: ${(job.lyrics ?? "").slice(0, 200)}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
+    `unmetered alapana improvisation in Carnatic raga ${job.raga}`,
+    `${timbre} over a quiet continuous tanpura drone`,
+    `free rhythm, no percussion, no tala, no meter`,
+    theory
+      ? `exploring the raga's character — ${theory.phrases.join("; ")}; arohana ${theory.arohana}, avarohana ${theory.avarohana}`
+      : `exploring the raga's characteristic phrases`,
+    `${moodPart}roughly ${job.durationSeconds} seconds`,
+  ].join(", ");
 }
 
 async function callHuggingFace(prompt: string): Promise<Buffer> {
@@ -208,10 +194,7 @@ export async function generateTrack(jobId: string): Promise<void> {
       data: {
         generationJobId: job.id,
         userId: job.userId,
-        title:
-          job.generationMode === "alapana"
-            ? `${job.raga} alapana`
-            : `${job.raga} kriti`,
+        title: `${job.raga} alapana`,
         raga: job.raga,
         tala: job.tala,
         audioUrl,
