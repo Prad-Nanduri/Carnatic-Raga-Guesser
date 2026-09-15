@@ -18,7 +18,11 @@ const INSTRUMENTS: { value: string; label: string }[] = [
   { value: "voice", label: "Voice (experimental)" },
   { value: "sitar_fusion", label: "Sitar — Hindustani-style fusion" },
 ];
-const DURATIONS = [10, 20];
+const DURATIONS = [10, 20, 30];
+const ENGINES = [
+  { value: "procedural", label: "Raga engine", hint: "synthesizes the alapana from the raga's actual scale — reliable" },
+  { value: "musicgen", label: "MusicGen", hint: "experimental ML via a public HF Space — flaky, doesn't know ragas, ~10s only" },
+];
 const MOODS = [
   "uplifting", "melancholic", "pleasant", "serious",
   "romantic", "energetic", "peaceful", "nostalgic",
@@ -35,6 +39,7 @@ export default function Home() {
   const [guessed, setGuessed] = useState<string | null>(null);
   const [instrument, setInstrument] = useState("veena");
   const [durationSeconds, setDurationSeconds] = useState(10);
+  const [engine, setEngine] = useState("procedural");
   const [mood, setMood] = useState(MOODS[0]);
   const [genre, setGenre] = useState(GENRES[0]);
   const [error, setError] = useState("");
@@ -53,9 +58,10 @@ export default function Home() {
           generationMode: "alapana",
           raga: raga || undefined,
           instrument,
-          durationSeconds,
           mood,
           genre,
+          engine,
+          durationSeconds: engine === "musicgen" ? 10 : durationSeconds,
           inputSource: confidence != null ? "voice_sample" : "manual_selection",
           ragaSuggestionConfidence: confidence,
           ragaGuessed: guessed,
@@ -139,6 +145,21 @@ export default function Home() {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="flex flex-col gap-2">
+            <span className="label">Generation engine</span>
+            <select
+              value={engine}
+              onChange={(e) => setEngine(e.target.value)}
+              className="field"
+            >
+              {ENGINES.map((en) => (
+                <option key={en.value} value={en.value}>{en.label}</option>
+              ))}
+            </select>
+            <span className="subtle">
+              {ENGINES.find((en) => en.value === engine)?.hint}
+            </span>
+          </label>
+          <label className="flex flex-col gap-2">
             <span className="label">Melodic voice</span>
             <select
               value={instrument}
@@ -153,11 +174,11 @@ export default function Home() {
           <fieldset className="flex flex-col gap-2">
             <span className="label">Duration</span>
             <div className="flex gap-3">
-              {DURATIONS.map((d) => (
+              {(engine === "musicgen" ? [10] : DURATIONS).map((d) => (
                 <label
                   key={d}
                   className={`flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-sm ${
-                    durationSeconds === d
+                    (engine === "musicgen" ? 10 : durationSeconds) === d
                       ? "border-maroon bg-sand text-ink"
                       : "border-line text-ink-soft"
                   }`}
@@ -166,7 +187,7 @@ export default function Home() {
                     type="radio"
                     name="duration"
                     value={d}
-                    checked={durationSeconds === d}
+                    checked={(engine === "musicgen" ? 10 : durationSeconds) === d}
                     onChange={() => setDurationSeconds(d)}
                     className="accent-maroon"
                   />
