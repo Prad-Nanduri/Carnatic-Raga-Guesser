@@ -24,7 +24,16 @@ function fmtBytes(bytes: bigint) {
 }
 
 export default async function DashboardPage() {
-  const metrics = await prisma.generationMetric.findMany({
+  type Metric = {
+    id: string;
+    status: string;
+    durationMs: number | null;
+    startedAt: Date;
+    generationJob: { raga: string };
+  };
+  let metrics: Metric[];
+  try {
+    metrics = await prisma.generationMetric.findMany({
     orderBy: { startedAt: "desc" },
     select: {
       id: true,
@@ -34,7 +43,19 @@ export default async function DashboardPage() {
       errorMessage: true,
       generationJob: { select: { raga: true } },
     },
-  });
+    });
+  } catch (e) {
+    return (
+      <main className="page-wrap max-w-4xl">
+        <SiteHeader />
+        <h1 className="heading mt-12">Metrics</h1>
+        <p className="subtle mt-4">
+          Metrics unavailable — the database is not reachable
+          {e instanceof Error ? ` (${e.message.slice(0, 120)})` : ""}.
+        </p>
+      </main>
+    );
+  }
 
   const durations = metrics
     .map((m) => m.durationMs)
@@ -46,10 +67,10 @@ export default async function DashboardPage() {
   const failed = metrics.filter((m) => m.status === "failed").length;
   const successRate = total ? `${((complete / total) * 100).toFixed(1)}%` : "—";
 
-  const storageAgg = await prisma.track.aggregate({
-    _sum: { fileSizeBytes: true },
-  });
-  const storageBytes = storageAgg._sum.fileSizeBytes ?? BigInt(0);
+  const storageAgg = await prisma.track
+    .aggregate({ _sum: { fileSizeBytes: true } })
+    .catch(() => null);
+  const storageBytes = storageAgg?._sum.fileSizeBytes ?? BigInt(0);
 
   const last20 = metrics.slice(0, 20);
   const chartData = [...last20]

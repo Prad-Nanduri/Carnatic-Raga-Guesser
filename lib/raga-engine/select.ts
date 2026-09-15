@@ -25,7 +25,7 @@ export interface RagaTheory {
   source: string;
 }
 
-export const RAGA_DATA: Record<string, RagaTheory> = {
+const LEGACY_RAGA_DATA: Record<string, RagaTheory> = {
   // Source for every scale below: https://www.karnatik.com/ragas.shtml
   // (standard school notation). Phrases are derived descriptors, not
   // transcribed sancharas.
@@ -113,6 +113,34 @@ export const RAGA_DATA: Record<string, RagaTheory> = {
     ],
     source: "karnatik.com raga reference",
   },
+};
+
+/**
+ * RAGA_DATA spans the full melakarta set (formula-generated scales, see
+ * lib/raga-engine/catalog.ts) plus all individually cited janya ragas.
+ * Melakarta entries carry a single generic phrase descriptor (sampurna
+ * scale exploration); janya entries keep their derived phrases.
+ */
+import { RAGA_CATALOG } from "./catalog";
+
+export const RAGA_DATA: Record<string, RagaTheory> = {
+  ...Object.fromEntries(
+    RAGA_CATALOG.map((e) => [
+      e.name,
+      {
+        arohana: e.arohana,
+        avarohana: e.avarohana,
+        phrases:
+          e.phrases ??
+          (e.kind === "melakarta"
+            ? ["full sampurna elaboration of all seven swaras"]
+            : ["characteristic janya phrases of the raga"]),
+        source: e.source,
+      },
+    ]),
+  ),
+  // Existing curated entries with hand-written descriptors keep theirs.
+  ...LEGACY_RAGA_DATA,
 };
 
 export interface RagaTalaRule {
@@ -215,8 +243,8 @@ const normalize = (s: string) => s.trim().toLowerCase();
 /** Resolve a user-supplied raga name against the curated list; null if unknown. */
 export function resolveRaga(name: string): string | null {
   const n = normalize(name);
-  const hit = RULES.find((r) => r.raga.toLowerCase() === n);
-  return hit ? hit.raga : null;
+  const hit = Object.keys(RAGA_DATA).find((r) => r.toLowerCase() === n);
+  return hit ?? null;
 }
 
 /**
@@ -272,6 +300,6 @@ export function selectRagaTala(
   return { raga, tala: `${rule.tala} (${rule.beats} beats)`, justification };
 }
 
-export const SUPPORTED_RAGAS = RULES.map((r) => r.raga);
+export const SUPPORTED_RAGAS = Object.keys(RAGA_DATA);
 
 export const RAGA_TALA_TABLE = RULES;

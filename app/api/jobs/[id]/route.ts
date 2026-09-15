@@ -21,6 +21,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       durationSeconds: true,
       inputSource: true,
       ragaSuggestionConfidence: true,
+      humGuessedRaga: true,
+      humVerdict: true,
       audioUrl: true,
       prompt: true,
       errorMessage: true,

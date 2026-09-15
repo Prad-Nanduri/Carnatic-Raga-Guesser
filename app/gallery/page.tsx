@@ -21,16 +21,27 @@ interface Track {
   };
 }
 
+interface RagaStat {
+  raga: string;
+  kind: string;
+  generated: number;
+  humMatched: number;
+  verdictRight: number;
+  verdictWrong: number;
+}
+
 interface TracksResponse {
   tracks: Track[];
   page: number;
   totalPages: number;
   total: number;
   ragas: string[];
+  ragaStats: RagaStat[];
 }
 
 export default function GalleryPage() {
   const [data, setData] = useState<TracksResponse | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [raga, setRaga] = useState("");
   const [page, setPage] = useState(1);
 
@@ -38,7 +49,12 @@ export default function GalleryPage() {
     const params = new URLSearchParams({ page: String(page) });
     if (raga) params.set("raga", raga);
     const res = await fetch(`/api/tracks?${params}`);
-    if (res.ok) setData(await res.json());
+    if (!res.ok) {
+      setLoadError("Could not load the gallery — the service may be offline.");
+      return;
+    }
+    setLoadError("");
+    setData(await res.json());
   }, [page, raga]);
 
   useEffect(() => { load(); }, [load]);
@@ -47,13 +63,47 @@ export default function GalleryPage() {
     <main className="page-wrap">
       <SiteHeader />
 
-      <div className="mt-12 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="heading">Gallery</h1>
-          <p className="subtle mt-2">
-            Public alapanas and kritis, composed by raga.
-          </p>
+      <div className="mt-12">
+        <h1 className="heading">Raga explorer</h1>
+        <p className="subtle mt-2">
+          Which ragas have been generated — and how often hum-matching guessed
+          them right.
+        </p>
+      </div>
+
+      {loadError && <p className="mt-6 text-sm text-danger">{loadError}</p>}
+
+      {data && data.ragaStats.length > 0 && (
+        <div className="card mt-8 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line">
+                <th className="label px-4 py-3 font-semibold">Raga</th>
+                <th className="label px-4 py-3 font-semibold">Kind</th>
+                <th className="label px-4 py-3 font-semibold">Generated</th>
+                <th className="label px-4 py-3 font-semibold">Hum-matched</th>
+                <th className="label px-4 py-3 font-semibold">Guess right</th>
+                <th className="label px-4 py-3 font-semibold">Guess wrong</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.ragaStats.map((s) => (
+                <tr key={s.raga} className="border-b border-line last:border-0">
+                  <td className="px-4 py-2.5 font-medium">{s.raga}</td>
+                  <td className="px-4 py-2.5 subtle">{s.kind}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.generated}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.humMatched}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.verdictRight}</td>
+                  <td className="px-4 py-2.5 tabular-nums">{s.verdictWrong}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      )}
+
+      <div className="mt-12 flex flex-wrap items-end justify-between gap-4">
+        <h2 className="heading text-xl">Public tracks</h2>
         <label className="flex items-center gap-3">
           <span className="label">Raga</span>
           <select
@@ -67,11 +117,11 @@ export default function GalleryPage() {
         </label>
       </div>
 
-      {!data ? (
+      {!data && !loadError ? (
         <p className="subtle mt-10">Loading…</p>
-      ) : data.tracks.length === 0 ? (
+      ) : data && data.tracks.length === 0 ? (
         <p className="subtle mt-10">No public tracks yet.</p>
-      ) : (
+      ) : data ? (
         <ul className="mt-8 flex flex-col gap-5">
           {data.tracks.map((t) => (
             <li key={t.id} className="card p-5">
@@ -95,21 +145,21 @@ export default function GalleryPage() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
 
       {data && data.totalPages > 1 && (
         <div className="mt-8 flex items-center gap-4">
           <button
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => setPage(page - 1)}
             className="btn-ghost"
           >
-            Prev
+            Previous
           </button>
-          <span className="subtle">Page {data.page} of {data.totalPages}</span>
+          <span className="subtle">Page {page} of {data.totalPages}</span>
           <button
             disabled={page >= data.totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage(page + 1)}
             className="btn-ghost"
           >
             Next
