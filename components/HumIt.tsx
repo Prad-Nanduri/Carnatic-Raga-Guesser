@@ -131,9 +131,18 @@ export default function HumIt({
   return (
     <div className="flex flex-col gap-2">
       {phase === "idle" || phase === "error" ? (
-        <button type="button" onClick={run} className="btn-ghost self-start">
-          Hum it instead
-        </button>
+        <>
+          <button type="button" onClick={run} className="btn-ghost self-start">
+            Hum it instead
+          </button>
+          <p className="subtle mt-1 max-w-md">
+            Disclaimer: this matches your hummed phrase only against
+            Ragaforge&rsquo;s curated raga list, entirely in your browser —
+            audio never leaves your device. Matching a real voice to a raga
+            is a best-effort guess, not identification; treat the suggestions
+            as candidates and confirm the one that sounds right.
+          </p>
+        </>
       ) : (
         <button type="button" onClick={stop} className="btn-ghost self-start">
           Stop early

@@ -17,6 +17,8 @@ interface Job {
   durationSeconds: number;
   inputSource: string;
   ragaSuggestionConfidence: number | null;
+  humGuessedRaga: string | null;
+  humVerdict: string | null;
   audioUrl: string | null;
   prompt: string | null;
   errorMessage: string | null;
@@ -34,6 +36,17 @@ export default function GeneratePage() {
   const { jobId } = useParams<{ jobId: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
+  const [verdictSent, setVerdictSent] = useState(false);
+
+  async function sendVerdict(v: "right" | "wrong") {
+    await fetch(`/api/jobs/${jobId}/verdict`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verdict: v }),
+    });
+    setVerdictSent(true);
+    setJob((j) => (j ? { ...j, humVerdict: v } : j));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -115,6 +128,32 @@ export default function GeneratePage() {
                 Hear it in the gallery
               </Link>
             </p>
+          )}
+        </div>
+      )}
+
+      {job.inputSource === "voice_sample" && job.humGuessedRaga && (
+        <div className="card mt-6 p-5">
+          <p className="text-sm text-ink">
+            Hum-match guessed{" "}
+            <span className="font-medium text-maroon">{job.humGuessedRaga}</span>
+            {job.ragaSuggestionConfidence != null &&
+              ` (${Math.round(job.ragaSuggestionConfidence * 100)}% confidence)`}
+            {" — was it the raga you meant?"}
+          </p>
+          {job.humVerdict || verdictSent ? (
+            <p className="subtle mt-2">
+              Marked {job.humVerdict}. Thanks — it trains future matching.
+            </p>
+          ) : (
+            <div className="mt-3 flex gap-3">
+              <button onClick={() => sendVerdict("right")} className="btn-ghost">
+                Right
+              </button>
+              <button onClick={() => sendVerdict("wrong")} className="btn-ghost">
+                Wrong
+              </button>
+            </div>
           )}
         </div>
       )}

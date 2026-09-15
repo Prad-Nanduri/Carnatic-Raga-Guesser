@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import TempleFooter from "@/components/TempleFooter";
 import HumIt from "@/components/HumIt";
+import { RAGA_CATALOG } from "@/lib/raga-engine/catalog";
 
-const RAGAS = [
-  "Hamsadhwani", "Sindhubhairavi", "Mohanam", "Kharaharapriya",
-  "Kalyani", "Nattai", "Shanmukhapriya", "Shubhapantuvarali",
-];
+const MELAKARTA_RAGAS = RAGA_CATALOG.filter((r) => r.kind === "melakarta").map((r) => r.name);
+const JANYA_RAGAS = RAGA_CATALOG.filter((r) => r.kind === "janya").map((r) => r.name);
 const INSTRUMENTS: { value: string; label: string }[] = [
   { value: "veena", label: "Veena" },
   { value: "violin", label: "Violin" },
@@ -33,6 +32,7 @@ export default function Home() {
   const router = useRouter();
   const [raga, setRaga] = useState("");
   const [confidence, setConfidence] = useState<number | null>(null);
+  const [guessed, setGuessed] = useState<string | null>(null);
   const [instrument, setInstrument] = useState("veena");
   const [durationSeconds, setDurationSeconds] = useState(10);
   const [mood, setMood] = useState(MOODS[0]);
@@ -44,28 +44,42 @@ export default function Home() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        generationMode: "alapana",
-        raga: raga || undefined,
-        instrument,
-        durationSeconds,
-        mood,
-        genre,
-        inputSource: confidence != null ? "voice_sample" : "manual_selection",
-        ragaSuggestionConfidence: confidence,
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          generationMode: "alapana",
+          raga: raga || undefined,
+          instrument,
+          durationSeconds,
+          mood,
+          genre,
+          inputSource: confidence != null ? "voice_sample" : "manual_selection",
+          ragaSuggestionConfidence: confidence,
+          ragaGuessed: guessed,
+        }),
+      });
+    } catch {
+      setLoading(false);
+      setError("Network error — could not reach the server.");
+      return;
+    }
     setLoading(false);
     if (res.status === 401) {
       router.push("/login");
       return;
     }
-    const data = await res.json();
+    let data: { jobId?: string; error?: string };
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Server error ${res.status} — the service may be misconfigured.`);
+      return;
+    }
     if (!res.ok) {
-      setError(data.error ?? "Generation failed");
+      setError(data.error ?? `Generation failed (${res.status})`);
       return;
     }
     router.push(`/generate/${data.jobId}`);
@@ -92,11 +106,20 @@ export default function Home() {
             <span className="label">Raga</span>
             <select
               value={raga}
-              onChange={(e) => { setRaga(e.target.value); setConfidence(null); }}
+              onChange={(e) => {
+                setRaga(e.target.value);
+                setConfidence(null);
+                setGuessed(null);
+              }}
               className="field"
             >
               <option value="">Choose — or hum below</option>
-              {RAGAS.map((r) => <option key={r}>{r}</option>)}
+              <optgroup label="Melakarta (parent ragas)">
+                {MELAKARTA_RAGAS.map((r) => <option key={r}>{r}</option>)}
+              </optgroup>
+              <optgroup label="Janya (derived ragas)">
+                {JANYA_RAGAS.map((r) => <option key={r}>{r}</option>)}
+              </optgroup>
             </select>
           </label>
           {confidence != null && (
@@ -109,6 +132,7 @@ export default function Home() {
             onPick={(r, c) => {
               setRaga(r);
               setConfidence(c);
+              setGuessed(r);
             }}
           />
         </div>

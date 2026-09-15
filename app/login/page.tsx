@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn, signUp } from "@/lib/auth-client";
@@ -13,6 +13,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [githubOn, setGithubOn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth-providers")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setGithubOn(Boolean(d?.github)))
+      .catch(() => {});
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +36,13 @@ export default function LoginPage() {
   }
 
   async function github() {
-    await signIn.social({ provider: "github", callbackURL: "/" });
+    setError("");
+    try {
+      const { error } = await signIn.social({ provider: "github", callbackURL: "/" });
+      if (error) setError(error.message ?? "GitHub sign-in failed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "GitHub sign-in failed");
+    }
   }
 
   return (
@@ -40,8 +54,8 @@ export default function LoginPage() {
       </h1>
       <p className="subtle mt-2">
         {mode === "login"
-          ? "Sign in to compose, publish, and like tracks."
-          : "An account lets you compose and publish tracks."}
+          ? "Sign in to generate alapanas and keep them on your account."
+          : "An account keeps your generated alapanas in one place."}
       </p>
 
       <form onSubmit={submit} className="card mt-8 flex flex-col gap-4 p-6">
@@ -82,9 +96,11 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <button onClick={github} className="btn-ghost mt-4 w-full">
-        Continue with GitHub
-      </button>
+      {githubOn && (
+        <button onClick={github} className="btn-ghost mt-4 w-full">
+          Continue with GitHub
+        </button>
+      )}
 
       <button
         onClick={() => setMode(mode === "login" ? "signup" : "login")}

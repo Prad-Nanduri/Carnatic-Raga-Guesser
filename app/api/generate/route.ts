@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
       durationSeconds,
       inputSource,
       ragaSuggestionConfidence: confidence,
+      humGuessedRaga:
+        typeof body?.ragaGuessed === "string" ? body.ragaGuessed : null,
       mood,
       genre,
       raga,

@@ -111,6 +111,8 @@ model GenerationJob {
   durationSeconds Int           @default(10) @map("duration_seconds")
   inputSource    InputSource    @default(manual_selection) @map("input_source")
   ragaSuggestionConfidence Float? @map("raga_suggestion_confidence")
+  humGuessedRaga String?  @map("hum_guessed_raga")
+  humVerdict     String?  @map("hum_verdict") // 'right' | 'wrong' — user feedback on the guess
   lyrics    String?
   mood      String?
   genre     String?
