@@ -98,7 +98,8 @@ model GenerationJob {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  tracks Track[]
+  tracks  Track[]
+  metrics GenerationMetric[]
 
   @@index([userId])
   @@index([status])
@@ -115,6 +116,7 @@ model Track {
   raga            String
   tala            String
   audioUrl        String        @map("audio_url")
+  fileSizeBytes   BigInt?       @map("file_size_bytes")
   isPublic        Boolean       @default(false) @map("is_public")
   playCount       Int           @default(0) @map("play_count")
   createdAt       DateTime      @default(now()) @map("created_at")
@@ -126,6 +128,21 @@ model Track {
   @@index([raga])
   @@index([isPublic, raga])
   @@map("tracks")
+}
+
+model GenerationMetric {
+  id              String        @id @default(cuid())
+  generationJobId String        @map("generation_job_id")
+  generationJob   GenerationJob @relation(fields: [generationJobId], references: [id], onDelete: Cascade)
+  startedAt       DateTime      @map("started_at")
+  completedAt     DateTime?     @map("completed_at")
+  durationMs      Int?          @map("duration_ms")
+  status          JobStatus
+  errorMessage    String?       @map("error_message")
+
+  @@index([generationJobId])
+  @@index([status])
+  @@map("generation_metrics")
 }
 
 model TrackLike {

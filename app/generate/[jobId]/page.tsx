@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import WaveformPlayer from "@/components/WaveformPlayer";
 
 interface Job {
   id: string;
@@ -54,7 +55,7 @@ export default function GeneratePage() {
 
       {job.status === "complete" && job.audioUrl && (
         <div className="mt-6">
-          <audio controls src={job.audioUrl} className="w-full" />
+          <WaveformPlayer src={job.audioUrl} />
           {job.tracks[0] && (
             <p className="mt-2 text-sm">
               Track created. <Link className="underline" href="/gallery">Go to gallery</Link>

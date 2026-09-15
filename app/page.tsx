@@ -61,6 +61,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold">RagaForge</h1>
         <div className="flex gap-4 text-sm">
           <Link href="/gallery" className="underline">Gallery</Link>
+          <Link href="/dashboard" className="underline">Dashboard</Link>
           {session ? (
             <span>{session.user.email}</span>
           ) : (

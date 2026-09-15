@@ -79,6 +79,21 @@ async function callHuggingFace(prompt: string): Promise<Buffer> {
 export async function generateTrack(jobId: string): Promise<void> {
   const job = await prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
   const prompt = buildPrompt(job);
+  const startedAt = new Date();
+
+  const recordMetric = async (status: "complete" | "failed", errorMessage: string | null) => {
+    const completedAt = new Date();
+    await prisma.generationMetric.create({
+      data: {
+        generationJobId: jobId,
+        startedAt,
+        completedAt,
+        durationMs: completedAt.getTime() - startedAt.getTime(),
+        status,
+        errorMessage,
+      },
+    }).catch(() => {});
+  };
 
   await prisma.generationJob.update({
     where: { id: jobId },
@@ -102,6 +117,7 @@ export async function generateTrack(jobId: string): Promise<void> {
       where: { id: jobId },
       data: { status: "failed", errorMessage: message },
     });
+    await recordMetric("failed", message);
     return;
   }
 
@@ -125,16 +141,17 @@ export async function generateTrack(jobId: string): Promise<void> {
         raga: job.raga,
         tala: job.tala,
         audioUrl,
+        fileSizeBytes: BigInt(audio.length),
         isPublic: false,
       },
     });
+    await recordMetric("complete", null);
   } catch (err) {
+    const message = `Audio upload failed: ${err instanceof Error ? err.message : String(err)}`;
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: {
-        status: "failed",
-        errorMessage: `Audio upload failed: ${err instanceof Error ? err.message : String(err)}`,
-      },
+      data: { status: "failed", errorMessage: message },
     });
+    await recordMetric("failed", message);
   }
 }
