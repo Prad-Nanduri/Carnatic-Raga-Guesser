@@ -3,6 +3,9 @@
  * (facebook/MusicGen) over the Gradio client protocol. Kept behind the
  * "experimental" engine toggle — Spaces are shared, rate-limited, and can
  * sleep; the procedural engine is the default.
+ *
+ * The Space exposes batched endpoints ("/predict_batched"), not "/predict"
+ * — we introspect the API and call the first generation endpoint.
  */
 
 import { Client } from "@gradio/client";
@@ -14,10 +17,19 @@ export async function generateViaMusicGen(prompt: string): Promise<Buffer> {
   const token = process.env.HF_API_TOKEN || process.env.HF_TOKEN;
   const client = await Client.connect(SPACE, token ? { hf_token: token as `hf_${string}` } : undefined);
 
-  // The Space's prediction API is introspected at connect time; the
-  // canonical endpoint is /predict with a text prompt input.
+  // Introspect: prefer "/predict_batched" (MusicGen's generation endpoint);
+  // fall back to any endpoint whose name starts with "predict".
+  const api = (await client.view_api().catch(() => null)) as {
+    named_endpoints?: Record<string, { parameters?: unknown[] }>;
+  } | null;
+  const names = api?.named_endpoints ? Object.keys(api.named_endpoints) : [];
+  const endpoint =
+    names.find((n) => n === "/predict_batched") ??
+    names.find((n) => n.startsWith("/predict")) ??
+    "/predict_batched";
+
   const result = (await Promise.race([
-    client.predict("/predict", [prompt]),
+    client.predict(endpoint, [prompt]),
     new Promise((_, reject) =>
       setTimeout(() => reject(new Error("MusicGen Space timed out")), TIMEOUT_MS),
     ),
