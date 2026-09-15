@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn, signUp } from "@/lib/auth-client";
+import SiteHeader from "@/components/SiteHeader";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,53 +32,71 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm p-8">
-      <h1 className="mb-6 text-2xl font-bold">{mode === "login" ? "Log in" : "Sign up"}</h1>
+    <main className="page-wrap max-w-md">
+      <SiteHeader />
 
-      <form onSubmit={submit} className="flex flex-col gap-3">
+      <h1 className="heading mt-12">
+        {mode === "login" ? "Welcome back" : "Join Ragaforge"}
+      </h1>
+      <p className="subtle mt-2">
+        {mode === "login"
+          ? "Sign in to compose, publish, and like tracks."
+          : "An account lets you compose and publish tracks."}
+      </p>
+
+      <form onSubmit={submit} className="card mt-8 flex flex-col gap-4 p-6">
         {mode === "signup" && (
+          <label className="flex flex-col gap-2">
+            <span className="label">Name</span>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="field"
+            />
+          </label>
+        )}
+        <label className="flex flex-col gap-2">
+          <span className="label">Email</span>
           <input
             required
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded border p-2"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="field"
           />
-        )}
-        <input
-          required
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded border p-2"
-        />
-        <input
-          required
-          type="password"
-          placeholder="Password (min 8 chars)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded border p-2"
-        />
-        <button className="rounded bg-black p-2 text-white">
+        </label>
+        <label className="flex flex-col gap-2">
+          <span className="label">Password</span>
+          <input
+            required
+            type="password"
+            placeholder="8 characters minimum"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="field"
+          />
+        </label>
+        <button className="btn-primary">
           {mode === "login" ? "Log in" : "Create account"}
         </button>
       </form>
 
-      <button onClick={github} className="mt-3 w-full rounded border p-2">
+      <button onClick={github} className="btn-ghost mt-4 w-full">
         Continue with GitHub
       </button>
 
       <button
         onClick={() => setMode(mode === "login" ? "signup" : "login")}
-        className="mt-4 text-sm underline"
+        className="nav-link mt-5"
       >
         {mode === "login" ? "Need an account? Sign up" : "Have an account? Log in"}
       </button>
 
-      {error && <p className="mt-3 text-red-600">{error}</p>}
-      <p className="mt-6"><Link href="/" className="text-sm underline">Back home</Link></p>
+      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+      <p className="mt-8">
+        <Link href="/" className="nav-link">Back home</Link>
+      </p>
     </main>
   );
 }
