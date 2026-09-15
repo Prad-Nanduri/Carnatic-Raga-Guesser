@@ -10,6 +10,14 @@ function fmt(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function themeColor(name: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  const v = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return v || fallback;
+}
+
 export default function WaveformPlayer({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
@@ -22,8 +30,9 @@ export default function WaveformPlayer({ src }: { src: string }) {
     if (!containerRef.current) return;
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#a8a8a8",
-      progressColor: "#111111",
+      waveColor: themeColor("--bronze", "#8c6a48"),
+      progressColor: themeColor("--maroon", "#571d1d"),
+      cursorColor: themeColor("--gold", "#86661f"),
       height: 64,
       url: src,
     });
@@ -44,14 +53,14 @@ export default function WaveformPlayer({ src }: { src: string }) {
   return (
     <div className="w-full">
       <div ref={containerRef} className="w-full" />
-      <div className="mt-1 flex items-center gap-3 text-sm">
+      <div className="mt-2 flex items-center gap-3 text-sm">
         <button
           onClick={() => wsRef.current?.playPause()}
-          className="rounded border px-3 py-1"
+          className="btn-ghost px-3 py-1"
         >
           {playing ? "Pause" : "Play"}
         </button>
-        <span className="text-gray-600">
+        <span className="subtle tabular-nums">
           {fmt(time)} / {fmt(duration)}
         </span>
       </div>

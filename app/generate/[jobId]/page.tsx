@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import WaveformPlayer from "@/components/WaveformPlayer";
+import SiteHeader from "@/components/SiteHeader";
+import KolamRule from "@/components/KolamRule";
 
 interface Job {
   id: string;
@@ -15,6 +17,13 @@ interface Job {
   errorMessage: string | null;
   tracks: { id: string }[];
 }
+
+const STATUS_LABEL: Record<Job["status"], string> = {
+  pending: "Queued",
+  processing: "Composing",
+  complete: "Complete",
+  failed: "Failed",
+};
 
 export default function GeneratePage() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -40,42 +49,90 @@ export default function GeneratePage() {
     return () => { cancelled = true; };
   }, [jobId]);
 
-  if (error) return <main className="p-8"><p>{error}</p><Link href="/" className="underline">Home</Link></main>;
-  if (!job) return <main className="p-8">Loading…</main>;
+  if (error) {
+    return (
+      <main className="page-wrap">
+        <SiteHeader />
+        <p className="mt-12 text-sm text-danger">{error}</p>
+        <Link href="/" className="nav-link mt-4 inline-block">Home</Link>
+      </main>
+    );
+  }
+  if (!job) {
+    return (
+      <main className="page-wrap">
+        <SiteHeader />
+        <p className="subtle mt-12">Loading…</p>
+      </main>
+    );
+  }
+
+  const working = job.status === "pending" || job.status === "processing";
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <h1 className="mb-4 text-2xl font-bold">Generation</h1>
-      <p>Status: <strong>{job.status}</strong></p>
-      <p>Raga: {job.raga} · Tala: {job.tala}</p>
+    <main className="page-wrap">
+      <SiteHeader />
 
-      {(job.status === "pending" || job.status === "processing") && (
-        <p className="mt-4 animate-pulse text-gray-600">Working on it — this page updates automatically.</p>
+      <div className="mt-12 flex items-baseline justify-between gap-4">
+        <h1 className="heading">{job.raga}</h1>
+        <span
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            job.status === "failed"
+              ? "border-danger text-danger"
+              : "border-bronze text-bronze"
+          }`}
+        >
+          {STATUS_LABEL[job.status]}
+        </span>
+      </div>
+      <p className="subtle mt-2">Tala: {job.tala}</p>
+
+      {working && (
+        <div className="mt-8">
+          <p className="animate-pulse text-sm text-ink-soft">
+            Composing — this page updates itself when the track is ready.
+          </p>
+          <KolamRule className="mt-6" />
+        </div>
       )}
 
       {job.status === "complete" && job.audioUrl && (
-        <div className="mt-6">
+        <div className="card mt-8 p-5">
           <WaveformPlayer src={job.audioUrl} />
           {job.tracks[0] && (
-            <p className="mt-2 text-sm">
-              Track created. <Link className="underline" href="/gallery">Go to gallery</Link>
+            <p className="subtle mt-4">
+              Track created.{" "}
+              <Link className="nav-link underline" href="/gallery">
+                Hear it in the gallery
+              </Link>
             </p>
           )}
         </div>
       )}
 
-      {job.prompt && (
-        <p className="mt-4 text-xs text-gray-500">Prompt: {job.prompt}</p>
-      )}
-
       {job.status === "failed" && (
-        <div className="mt-4">
-          <p className="text-red-600">Generation failed{job.errorMessage ? `: ${job.errorMessage}` : "."}</p>
-          <Link href="/" className="underline">Try again</Link>
+        <div className="card mt-8 border-danger p-5">
+          <p className="text-sm text-danger">
+            Generation failed{job.errorMessage ? `: ${job.errorMessage}` : "."}
+          </p>
+          <Link href="/" className="nav-link mt-3 inline-block underline">
+            Try again
+          </Link>
         </div>
       )}
 
-      <Link href="/" className="mt-8 inline-block underline">New generation</Link>
+      {job.prompt && (
+        <details className="mt-8">
+          <summary className="label cursor-pointer select-none">
+            Generation prompt
+          </summary>
+          <p className="subtle mt-2 italic">{job.prompt}</p>
+        </details>
+      )}
+
+      <Link href="/" className="nav-link mt-10 inline-block underline">
+        Compose another
+      </Link>
     </main>
   );
 }

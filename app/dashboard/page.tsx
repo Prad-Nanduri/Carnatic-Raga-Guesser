@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import LatencyChart from "@/components/LatencyChart";
+import SiteHeader from "@/components/SiteHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
   const total = metrics.length;
   const complete = metrics.filter((m) => m.status === "complete").length;
   const failed = metrics.filter((m) => m.status === "failed").length;
-  const successRate = total ? ((complete / total) * 100).toFixed(1) : "—";
+  const successRate = total ? `${((complete / total) * 100).toFixed(1)}%` : "—";
 
   const storageAgg = await prisma.track.aggregate({
     _sum: { fileSizeBytes: true },
@@ -60,64 +60,75 @@ export default async function DashboardPage() {
       status: m.status,
     }));
 
+  const stats: [string, string][] = [
+    ["Generations", String(total)],
+    ["Success rate", successRate],
+    ["Failures", String(failed)],
+    ["p50 latency", fmtMs(percentile(durations, 50))],
+    ["p95 latency", fmtMs(percentile(durations, 95))],
+    ["R2 storage", fmtBytes(storageBytes)],
+  ];
+
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <nav className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Metrics dashboard</h1>
-        <Link href="/" className="text-sm underline">Home</Link>
-      </nav>
+    <main className="page-wrap max-w-4xl">
+      <SiteHeader />
 
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
-        {[
-          ["Total generations", String(total)],
-          ["Success rate", `${successRate}%`],
-          ["Failures", String(failed)],
-          ["p50 latency", fmtMs(percentile(durations, 50))],
-          ["p95 latency", fmtMs(percentile(durations, 95))],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded border p-3">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-xl font-semibold">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <p className="mb-8 text-sm text-gray-600">
-        Estimated R2 storage used: <strong>{fmtBytes(storageBytes)}</strong>
+      <h1 className="heading mt-12">Metrics</h1>
+      <p className="subtle mt-2">
+        Real numbers from every generation job, computed at page load.
       </p>
 
+      <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-3">
+        {stats.map(([label, value]) => (
+          <div key={label} className="bg-card px-5 py-4">
+            <dt className="label">{label}</dt>
+            <dd className="mt-1 font-display text-2xl text-maroon">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
       {chartData.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-2 text-lg font-semibold">Recent generation latency</h2>
-          <LatencyChart data={chartData} />
+        <section className="mt-10">
+          <h2 className="heading text-xl">Recent generation latency</h2>
+          <div className="card mt-4 p-4">
+            <LatencyChart data={chartData} />
+          </div>
         </section>
       )}
 
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Last 20 generations</h2>
+      <section className="mt-10">
+        <h2 className="heading text-xl">Last 20 generations</h2>
         {last20.length === 0 ? (
-          <p className="text-gray-600">No generations recorded yet.</p>
+          <p className="subtle mt-4">No generations recorded yet.</p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="py-1">Raga</th>
-                <th>Status</th>
-                <th>Duration</th>
-                <th>Started</th>
-              </tr>
-            </thead>
-            <tbody>
-              {last20.map((m) => (
-                <tr key={m.id} className="border-b">
-                  <td className="py-1">{m.generationJob.raga}</td>
-                  <td>{m.status}</td>
-                  <td>{fmtMs(m.durationMs)}</td>
-                  <td>{m.startedAt.toISOString().slice(0, 19).replace("T", " ")}</td>
+          <div className="card mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-line">
+                  <th className="label px-4 py-3 font-semibold">Raga</th>
+                  <th className="label px-4 py-3 font-semibold">Status</th>
+                  <th className="label px-4 py-3 font-semibold">Duration</th>
+                  <th className="label px-4 py-3 font-semibold">Started</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {last20.map((m) => (
+                  <tr key={m.id} className="border-b border-line last:border-0">
+                    <td className="px-4 py-2.5 font-medium">{m.generationJob.raga}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={m.status === "failed" ? "text-danger" : ""}>
+                        {m.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums">{fmtMs(m.durationMs)}</td>
+                    <td className="px-4 py-2.5 subtle tabular-nums">
+                      {m.startedAt.toISOString().slice(0, 19).replace("T", " ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </main>

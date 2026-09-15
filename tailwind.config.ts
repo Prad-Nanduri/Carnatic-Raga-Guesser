@@ -9,8 +9,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        parchment: "var(--parchment)",
+        card: "var(--card)",
+        sand: "var(--sand)",
+        line: "var(--line)",
+        ink: "var(--ink)",
+        "ink-soft": "var(--ink-soft)",
+        maroon: "var(--maroon)",
+        "maroon-deep": "var(--maroon-deep)",
+        gold: "var(--gold)",
+        bronze: "var(--bronze)",
+        danger: "var(--danger)",
+      },
+      fontFamily: {
+        display: ["var(--font-display)", "Georgia", "serif"],
+        body: ["var(--font-body)", "Arial", "sans-serif"],
       },
     },
   },

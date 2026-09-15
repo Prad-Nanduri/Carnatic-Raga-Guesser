@@ -2,22 +2,130 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Ragaforge design tokens — warm lamplight on sandalwood.
+ * Light: ivory/sandalwood ground, oxblood ink, antique-gold accent.
+ * Dark: a lamplight room — deep umber ground, ember maroon, candlelit gold.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --parchment: #f3ead8;
+  --card: #faf4e6;
+  --sand: #e7dbc0;
+  --line: #d5c29c;
+  --ink: #331d17;
+  --ink-soft: #6f5643;
+  --maroon: #571d1d;
+  --maroon-deep: #401414;
+  --gold: #86661f;
+  --bronze: #7d5f3f;
+  --focus: #86661f;
+  --danger: #8c2b22;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --parchment: #1b110d;
+    --card: #261811;
+    --sand: #21140f;
+    --line: #493225;
+    --ink: #eee0c9;
+    --ink-soft: #b79d80;
+    --maroon: #d18a68;
+    --maroon-deep: #e6ab8b;
+    --gold: #cfa358;
+    --bronze: #a98a68;
+    --focus: #cfa358;
+    --danger: #e0786a;
   }
 }
 
+html,
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: clip;
+}
+
+body {
+  color: var(--ink);
+  background: var(--parchment);
+  font-family: var(--font-body), Arial, sans-serif;
+}
+
+/* Browser chrome carries the theme too: selection, caret, focus, scrollbars. */
+::selection {
+  background: var(--maroon);
+  color: var(--card);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select {
+  caret-color: var(--maroon);
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-color: var(--bronze);
+}
+
+* {
+  scrollbar-color: var(--bronze) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  .page-wrap {
+    @apply mx-auto w-full max-w-3xl px-6 py-10 sm:px-10;
+  }
+  .wordmark {
+    font-family: var(--font-display), Georgia, serif;
+    @apply text-3xl text-maroon tracking-tight;
+  }
+  .heading {
+    font-family: var(--font-display), Georgia, serif;
+    @apply text-2xl text-maroon tracking-tight;
+  }
+  .subtle {
+    @apply text-sm text-ink-soft;
+  }
+  .btn-primary {
+    @apply min-h-11 rounded-md bg-maroon px-5 py-2.5 text-sm font-semibold text-card
+      transition-colors hover:bg-maroon-deep
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply min-h-11 rounded-md border border-line bg-card px-4 py-2 text-sm text-ink
+      transition-colors hover:border-bronze
+      disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .field {
+    @apply min-h-11 w-full rounded-md border border-line bg-card px-3 py-2
+      text-sm text-ink placeholder:text-ink-soft
+      focus:border-bronze focus:outline-none;
+  }
+  .card {
+    @apply rounded-lg border border-line bg-card;
+  }
+  .nav-link {
+    @apply text-sm text-ink-soft underline-offset-4 transition-colors
+      hover:text-maroon hover:underline;
+  }
+  .label {
+    @apply text-xs font-semibold uppercase tracking-wider text-bronze;
+  }
 }
 
 @layer utilities {

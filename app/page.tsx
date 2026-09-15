@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useSession } from "@/lib/auth-client";
+import SiteHeader from "@/components/SiteHeader";
+import TempleFooter from "@/components/TempleFooter";
 
 const MOODS = [
   "uplifting", "melancholic", "pleasant", "serious",
@@ -20,7 +20,6 @@ const RAGAS = [
 
 export default function Home() {
   const router = useRouter();
-  const { data: session } = useSession();
   const [lyrics, setLyrics] = useState("");
   const [mood, setMood] = useState(MOODS[0]);
   const [genre, setGenre] = useState(GENRES[0]);
@@ -56,70 +55,69 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <nav className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">RagaForge</h1>
-        <div className="flex gap-4 text-sm">
-          <Link href="/gallery" className="underline">Gallery</Link>
-          <Link href="/dashboard" className="underline">Dashboard</Link>
-          {session ? (
-            <span>{session.user.email}</span>
-          ) : (
-            <Link href="/login" className="underline">Log in</Link>
-          )}
-        </div>
-      </nav>
+    <main className="page-wrap">
+      <SiteHeader />
 
-      <p className="mb-6 text-gray-600">
-        Generate Carnatic-inspired music from your lyrics. Pick a mood and genre;
-        the raga/tala engine handles the rest.
-      </p>
+      <section className="mt-12 max-w-xl">
+        <h1 className="font-display text-4xl leading-tight tracking-tight text-maroon text-balance">
+          Lyrics in, raga out.
+        </h1>
+        <p className="mt-4 text-base leading-relaxed text-ink-soft">
+          Write or paste lyrics, choose a mood and a genre, and Ragaforge picks
+          the raga and tala — then composes a Carnatic-inspired instrumental:
+          veena at the lead, mridangam and violin in accompaniment.
+        </p>
+      </section>
 
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          Lyrics
+      <form onSubmit={submit} className="card mt-10 flex flex-col gap-6 p-6 sm:p-8">
+        <label className="flex flex-col gap-2">
+          <span className="label">Lyrics</span>
           <textarea
             required
-            rows={5}
+            rows={6}
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
-            className="rounded border p-2"
+            className="field"
             placeholder="Write or paste your lyrics…"
           />
         </label>
 
-        <div className="flex gap-4">
-          <label className="flex flex-1 flex-col gap-1">
-            Mood
-            <select value={mood} onChange={(e) => setMood(e.target.value)} className="rounded border p-2">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-2">
+            <span className="label">Mood</span>
+            <select value={mood} onChange={(e) => setMood(e.target.value)} className="field">
               {MOODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </label>
-          <label className="flex flex-1 flex-col gap-1">
-            Genre
-            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="rounded border p-2">
+          <label className="flex flex-col gap-2">
+            <span className="label">Genre</span>
+            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="field">
               {GENRES.map((g) => <option key={g}>{g}</option>)}
             </select>
           </label>
         </div>
 
-        <label className="flex flex-col gap-1">
-          Raga override (optional)
-          <select value={ragaOverride} onChange={(e) => setRagaOverride(e.target.value)} className="rounded border p-2">
-            <option value="">— let the engine choose —</option>
+        <label className="flex flex-col gap-2">
+          <span className="label">Raga override · optional</span>
+          <select
+            value={ragaOverride}
+            onChange={(e) => setRagaOverride(e.target.value)}
+            className="field"
+          >
+            <option value="">Let the engine choose</option>
             {RAGAS.map((r) => <option key={r}>{r}</option>)}
           </select>
         </label>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Generating…" : "Generate track"}
-        </button>
-        {error && <p className="text-red-600">{error}</p>}
+        <div className="flex items-center gap-4">
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? "Composing…" : "Compose the track"}
+          </button>
+          {error && <p className="text-sm text-danger">{error}</p>}
+        </div>
       </form>
+
+      <TempleFooter />
     </main>
   );
 }
