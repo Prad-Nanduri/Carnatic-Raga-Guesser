@@ -62,13 +62,22 @@ prisma/schema.prisma       users, sessions, accounts, verifications,
 5. In the GitHub OAuth app, add the production callback
    `https://<app>.vercel.app/api/auth/callback/github`.
 
+## Generation flow
+
+`POST /api/generate` creates a `pending` job, then `generateTrack` runs in the
+background (`waitUntil`): it builds a Carnatic prompt (raga, tala beat-cycle,
+mood, genre, lyric excerpt), calls HF Inference `facebook/musicgen-small`
+(60s timeout, one retry), uploads the WAV to R2, and stores a 7-day presigned
+download URL on `generation_jobs.audio_url`. The constructed prompt and any
+error are stored on the job row (`prompt`, `error_message`).
+
 ## Not yet implemented
 
-- **Real audio generation** — `lib/generation/generateTrack.ts` is a stub that
-  waits 2s and returns a placeholder `audio_url`. A marked TODO shows where
-  the Hugging Face `facebook/musicgen-small` call plugs in.
 - **Waveform player** — gallery uses a plain `<audio>` tag; Wavesurfer.js is
   a next step.
 - **Analytics dashboard** — play counts are stored (`play_count`) but there's
   no dashboard UI yet.
-- Background job queue for generation (the stub runs inline in the request).
+- **Permanent audio URLs** — R2 objects are private; `audio_url` is a 7-day
+  presigned URL. A public bucket or a download-through API route is a follow-up.
+- Background job queue (generation currently runs via `waitUntil` on the
+  request's serverless function).

@@ -45,6 +45,13 @@ export async function createDownloadUrl(key: string, expiresIn = 3600) {
   );
 }
 
+/** Server-side upload of audio bytes to R2. */
+export async function putObject(key: string, body: Buffer | Uint8Array, contentType = "audio/wav") {
+  await r2Client().send(
+    new PutObjectCommand({ Bucket: bucket(), Key: key, Body: body, ContentType: contentType }),
+  );
+}
+
 /** Public-style key convention for generated tracks. */
 export function trackKey(userId: string, trackId: string) {
   return `tracks/${userId}/${trackId}.mp3`;

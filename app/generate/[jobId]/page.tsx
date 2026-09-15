@@ -10,6 +10,8 @@ interface Job {
   raga: string;
   tala: string;
   audioUrl: string | null;
+  prompt: string | null;
+  errorMessage: string | null;
   tracks: { id: string }[];
 }
 
@@ -61,8 +63,15 @@ export default function GeneratePage() {
         </div>
       )}
 
+      {job.prompt && (
+        <p className="mt-4 text-xs text-gray-500">Prompt: {job.prompt}</p>
+      )}
+
       {job.status === "failed" && (
-        <p className="mt-4 text-red-600">Generation failed. <Link href="/" className="underline">Try again</Link></p>
+        <div className="mt-4">
+          <p className="text-red-600">Generation failed{job.errorMessage ? `: ${job.errorMessage}` : "."}</p>
+          <Link href="/" className="underline">Try again</Link>
+        </div>
       )}
 
       <Link href="/" className="mt-8 inline-block underline">New generation</Link>

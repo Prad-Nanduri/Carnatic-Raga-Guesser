@@ -17,6 +17,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       raga: true,
       tala: true,
       audioUrl: true,
+      prompt: true,
+      errorMessage: true,
       createdAt: true,
       updatedAt: true,
       tracks: { select: { id: true } },

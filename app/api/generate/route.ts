@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { selectRagaTala } from "@/lib/raga-engine/select";
 import { generateTrack } from "@/lib/generation/generateTrack";
+
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -34,18 +37,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // NOTE: awaited inline for the stub. When the real HF MusicGen call lands,
-  // move this to a background job/queue so POST returns immediately.
-  try {
-    await generateTrack(job.id);
-  } catch {
-    await prisma.generationJob.update({
-      where: { id: job.id },
-      data: { status: "failed" },
-    });
-    return NextResponse.json({ jobId: job.id, status: "failed" }, { status: 500 });
-  }
+  // Run generation after the response so the client can poll /api/jobs/:id.
+  // waitUntil keeps the serverless function alive until the work settles.
+  waitUntil(
+    generateTrack(job.id).catch(async () => {
+      await prisma.generationJob.update({
+        where: { id: job.id },
+        data: { status: "failed", errorMessage: "Generation worker crashed" },
+      }).catch(() => {});
+    }),
+  );
 
-  const updated = await prisma.generationJob.findUniqueOrThrow({ where: { id: job.id } });
-  return NextResponse.json({ jobId: updated.id, status: updated.status });
+  return NextResponse.json({ jobId: job.id, status: job.status }, { status: 202 });
 }

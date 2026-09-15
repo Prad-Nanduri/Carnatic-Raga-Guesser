@@ -92,13 +92,16 @@ model GenerationJob {
   raga      String
   tala      String
   status    JobStatus @default(pending)
+  prompt    String?
   audioUrl  String?   @map("audio_url")
+  errorMessage String? @map("error_message")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
   tracks Track[]
 
   @@index([userId])
+  @@index([status])
   @@map("generation_jobs")
 }
 
