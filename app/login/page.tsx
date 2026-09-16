@@ -54,8 +54,8 @@ export default function LoginPage() {
       </h1>
       <p className="subtle mt-2">
         {mode === "login"
-          ? "Sign in to generate alapanas and keep them on your account."
-          : "An account keeps your generated alapanas in one place."}
+          ? "Sign in to keep your hum matches on your account."
+          : "An account keeps your hum matches in one place."}
       </p>
 
       <form onSubmit={submit} className="card mt-8 flex flex-col gap-4 p-6">

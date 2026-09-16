@@ -18,11 +18,21 @@ const CALIBRATE_MS = 3000;
 const PHRASE_MS = 15000;
 const CLARITY = 0.7;
 
+export interface HumResult {
+  raga: string;
+  confidence: number;
+  /** pitch track in semitones above the calibrated Sa */
+  semis: number[];
+  /** 12-bucket pitch-class histogram (0 = Sa) */
+  hist: number[];
+}
+
 export default function HumIt({
   onPick,
 }: {
-  onPick: (raga: string, confidence: number) => void;
+  onPick: (result: HumResult) => void;
 }) {
+  const trackRef = useRef<{ semis: number[]; hist: number[] } | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [candidates, setCandidates] = useState<RagaCandidate[]>([]);
@@ -83,6 +93,8 @@ export default function HumIt({
       }
 
       const hist = pitchClassHistogram(phraseFreqs, sa);
+      const semis = phraseFreqs.map((f) => 12 * Math.log2(f / sa));
+      trackRef.current = { semis, hist };
       const result = matchRagas(hist);
       setCandidates(result);
       setPhase("candidates");
@@ -108,7 +120,14 @@ export default function HumIt({
             <li key={c.raga}>
               <button
                 type="button"
-                onClick={() => onPick(c.raga, c.confidence)}
+                onClick={() =>
+                  onPick({
+                    raga: c.raga,
+                    confidence: c.confidence,
+                    semis: trackRef.current?.semis ?? [],
+                    hist: trackRef.current?.hist ?? [],
+                  })
+                }
                 className={`w-full rounded-md border px-4 py-3 text-left text-sm ${
                   i === 0 ? "border-maroon bg-sand" : "border-line"
                 }`}

@@ -15,7 +15,7 @@ const body = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "Ragaforge",
-  description: "Carnatic-inspired music generated from your lyrics",
+  description: "Hum a phrase — Ragaforge identifies the closest Carnatic raga and plays you its scale and real alapana performances.",
 };
 
 export default function RootLayout({
