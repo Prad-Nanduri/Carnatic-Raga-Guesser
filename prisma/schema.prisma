@@ -23,6 +23,7 @@ model User {
   generationJobs GenerationJob[]
   tracks         Track[]
   trackLikes     TrackLike[]
+  humMatches     HumMatch[]
 
   @@map("users")
 }
@@ -171,6 +172,26 @@ model GenerationMetric {
   @@index([generationJobId])
   @@index([status])
   @@map("generation_metrics")
+}
+
+/**
+ * A voice-sample raga match: the user hummed, we suggested ragas, they
+ * confirmed (or not) and judged the guess. This is the centerpiece
+ * record now — generation_jobs remains for legacy alapana data.
+ */
+model HumMatch {
+  id            String   @id @default(cuid())
+  userId        String?  @map("user_id") // nullable: anonymous matches allowed
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guessedRaga   String   @map("guessed_raga")   // raga the matcher suggested/user picked
+  confirmedRaga String?  @map("confirmed_raga") // raga the user says they meant
+  confidence    Float?                            // matcher score 0..1
+  verdict       String?  // 'right' | 'wrong'
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([guessedRaga])
+  @@index([userId])
+  @@map("hum_matches")
 }
 
 model TrackLike {

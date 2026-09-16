@@ -30,8 +30,8 @@ export default function TempleFooter() {
       <div className="mt-6 flex flex-col items-center gap-3">
         <Gopuram />
         <p className="subtle text-xs">
-          Lyrics in, raga out — generated with MusicGen, tuned by a rule-based
-          raga/tala engine.
+          Hum a phrase — matched to the closest Carnatic raga by your own
+          pitch contour, judged by you.
         </p>
       </div>
     </footer>
