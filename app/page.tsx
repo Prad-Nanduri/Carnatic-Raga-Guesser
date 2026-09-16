@@ -7,6 +7,7 @@ import HumIt, { type HumResult } from "@/components/HumIt";
 import ScalePlayer from "@/components/ScalePlayer";
 import PitchContour from "@/components/PitchContour";
 import Recordings from "@/components/Recordings";
+import ScaleChips from "@/components/ScaleChips";
 import KolamRule from "@/components/KolamRule";
 import { RAGA_CATALOG } from "@/lib/raga-engine/catalog";
 import { RAGA_DATA } from "@/lib/raga-engine/select";
@@ -98,6 +99,9 @@ export default function Home() {
             and real alapana performances — and learns from whether its guess
             was right.
           </p>
+          <div className="mt-5 flex justify-center opacity-70" aria-hidden="true">
+            <ScaleChips scale="S R2 G3 M1 P D2 N3 S" />
+          </div>
         </section>
 
         <KolamRule />
@@ -115,7 +119,7 @@ export default function Home() {
           </label>
           <select
             id="manual-raga"
-            className="input mt-1"
+            className="field mt-1"
             defaultValue=""
             onChange={(e) => pickManual(e.target.value)}
           >
@@ -136,18 +140,23 @@ export default function Home() {
         </section>
 
         {match && theory && (
-          <section id="match" className="card mt-8 scroll-mt-6">
+          <section id="match" className="card rise mt-8 scroll-mt-6">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="font-display text-2xl text-ink">{match.raga}</h2>
               {match.confidence != null && (
                 <span className="subtle">{Math.round(match.confidence * 100)}% match</span>
               )}
             </div>
-            <p className="mt-1 text-sm text-ink-soft">
-              Ārohaṇa: <span className="font-medium text-ink">{theory.arohana}</span>
-              <br />
-              Avarohaṇa: <span className="font-medium text-ink">{theory.avarohana}</span>
-            </p>
+            <div className="mt-2 flex flex-col gap-2 text-sm">
+              <div>
+                <span className="label mr-2">Ārohaṇa</span>
+                <ScaleChips scale={theory.arohana} />
+              </div>
+              <div>
+                <span className="label mr-2">Avarohaṇa</span>
+                <ScaleChips scale={theory.avarohana} />
+              </div>
+            </div>
 
             <div className="mt-4">
               <ScalePlayer raga={match.raga} />
@@ -185,7 +194,7 @@ export default function Home() {
                   <label className="label" htmlFor="meant-raga">
                     Which raga did you mean? (optional)
                   </label>
-                  <select id="meant-raga" className="input" value={meantRaga}
+                  <select id="meant-raga" className="field" value={meantRaga}
                     onChange={(e) => setMeantRaga(e.target.value)}>
                     <option value="">Not sure / skip</option>
                     {[...MELAKARTA, ...JANYA].map((r) => (

@@ -57,8 +57,10 @@ export default function Recordings({ raga }: { raga: string }) {
             key={i}
             type="button"
             onClick={() => setInstrument(i)}
-            className={`rounded-full border px-3 py-1 text-xs ${
-              instrument === i ? "border-maroon bg-sand text-maroon" : "border-line text-ink-soft"
+            className={`chip ${
+              instrument === i
+                ? "border-maroon bg-sand text-maroon"
+                : "border-line text-ink-soft hover:border-bronze"
             }`}
           >
             {LABELS[i]}

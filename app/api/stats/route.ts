@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { RAGA_CATALOG } from "@/lib/raga-engine/catalog";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Aggregated hum-match stats for the raga explorer + dashboard:
  * per-raga match counts, verdict splits, mean confidence; plus totals.

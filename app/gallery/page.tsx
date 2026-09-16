@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import ScalePlayer from "@/components/ScalePlayer";
 import Recordings from "@/components/Recordings";
+import ScaleChips from "@/components/ScaleChips";
 import { RAGA_DATA } from "@/lib/raga-engine/select";
 
 interface RagaStat {
@@ -65,11 +66,16 @@ export default function GalleryPage() {
               Close
             </button>
           </div>
-          <p className="mt-1 text-sm text-ink-soft">
-            Ārohaṇa: <span className="font-medium text-ink">{theory.arohana}</span>
-            <br />
-            Avarohaṇa: <span className="font-medium text-ink">{theory.avarohana}</span>
-          </p>
+          <div className="mt-2 flex flex-col gap-2 text-sm">
+            <div>
+              <span className="label mr-2">Ārohaṇa</span>
+              <ScaleChips scale={theory.arohana} />
+            </div>
+            <div>
+              <span className="label mr-2">Avarohaṇa</span>
+              <ScaleChips scale={theory.avarohana} />
+            </div>
+          </div>
           <div className="mt-4"><ScalePlayer raga={selected} /></div>
           <div className="mt-6"><Recordings raga={selected} /></div>
         </div>

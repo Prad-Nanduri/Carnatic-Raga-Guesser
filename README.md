@@ -1,83 +1,95 @@
-# RagaForge
+# Ragaforge
 
-Generate Carnatic-inspired music from your lyrics. Pick a mood and genre, and a
-rule-based engine selects the raga and tala; a generation service (stubbed for
-now) produces the audio. Full-stack Next.js 14 app — one deployable unit on
-Vercel's free tier.
+**Hum a phrase — find the raga.** Ragaforge identifies the closest Carnatic raga to your humming, shows you *why* it thinks so, plays you the scale, and pulls up real alapana performances — then learns from whether its guess was right.
+
+Live: **https://ragaforge.vercel.app**
+
+## Why
+
+Raga identification is a genuinely hard, unsolved-at-scale MIR (music information retrieval) problem — published accuracy numbers come from clean recordings of trained musicians, not phone-mic voice notes. Ragaforge deliberately scopes the problem down: match a hummed phrase against a *curated catalog* of 130+ Carnatic ragas, always present ranked candidates (never a single overconfident answer), and **close the loop with human verdicts** — every "right"/"wrong" click becomes calibration data.
+
+It started as a lyrics→music generation app. Generation got scrapped entirely (the output quality wasn't there); the hum-matcher — the part that actually worked — became the product.
+
+## Features
+
+- **Browser-only pitch pipeline** — hold your Sa for 3s to calibrate, then hum up to 15s. Pitch tracking runs client-side (Pitchy, MPM autocorrelation on an `AnalyserNode`); raw audio never leaves the browser.
+- **IDF-weighted matcher** — a tonic-normalized pitch-class histogram is scored against each raga's arohana/avarohana. Swaras are weighted by *inverse catalog frequency* — rare swaras (e.g. prati-madhyama M2) discriminate; near-universal Sa/Pa barely count. Off-scale energy is penalized; a noise floor drops detection jitter.
+- **Match evidence, not a black box** — your pitch contour drawn over the candidate raga's swara guide bands, plus per-swara energy bars (in-scale vs off-scale).
+- **Verdict loop** — mark the guess right/wrong, say what you actually meant on a miss. Feeds real evaluation data.
+- **Scale player** — client-side WebAudio rendering of arohana/avarohana with a Sa drone.
+- **Real alapana recordings** — YouTube embeds per raga + instrument (veena/violin/venu/nadaswaram/voice), no API key.
+- **Raga explorer** — every raga ever matched with right/wrong tallies.
+- **Match analytics dashboard** — overall accuracy, **confidence calibration** (do high-confidence guesses actually hit more?), and a **confusion table** (guessed → meant raga pairs).
+- **130+ ragas** — all 72 melakartas (formula-derived and verifiably correct) plus individually cited janyas from the karnatik.com reference.
 
 ## Architecture
 
-| Layer | Choice | Free tier |
-|-------|--------|-----------|
-| Frontend + API | Next.js 14 App Router (Route Handlers) + TypeScript + Tailwind | Vercel hobby |
-| Database | Postgres via Prisma ORM | Neon free tier |
-| Auth | BetterAuth — email/password + GitHub OAuth | — |
-| Audio storage | Cloudflare R2 (S3-compatible, presigned URLs) | R2 free tier |
-| Generation | Stub → will call HF Inference `facebook/musicgen-small` | HF free tier |
-
 ```
-app/
-  page.tsx                 submission form (lyrics, mood, genre, raga override)
-  generate/[jobId]/        polls GET /api/jobs/:id every 2s
-  gallery/                 public tracks, raga filter, pagination
-  login/                   email/password + GitHub sign-in
-  api/
-    auth/[...all]/         BetterAuth handler
-    generate/              POST — create job, run generation
-    jobs/[id]/             GET — job status (polling)
-    tracks/                GET — public tracks, ?raga= & ?page=
-    tracks/[id]/publish/   POST — auth required
-    tracks/[id]/like/      POST — auth required
-    tracks/[id]/download/  POST — auth required
-lib/
-  raga-engine/select.ts    v1 rule-based mood/genre -> raga -> tala table
-  generation/generateTrack.ts  stub (+ TODO where the HF call goes)
-  storage/r2.ts            presigned upload/download helpers
-  auth.ts, auth-client.ts, prisma.ts
-prisma/schema.prisma       users, sessions, accounts, verifications,
-                           generation_jobs, tracks, track_likes
+┌───────────────────────────── Browser ─────────────────────────────┐
+│  Mic ─▶ Pitchy (MPM pitch track, AudioContext)                     │
+│         │  calibrate Sa (3s) ─▶ phrase (≤15s)                      │
+│         ▼                                                         │
+│  semitone track ─▶ 12-bin pitch-class histogram (Sa = pc 0)        │
+│         │                                                         │
+│         ▼                                                         │
+│  matcher.ts: IDF-weighted coverage vs each raga's scale            │
+│         │                                                         │
+│         ▼  top-3 candidates (raga, confidence) — user picks         │
+└─────────┼─────────────────────────────────────────────────────────┘
+          │  POST /api/matches {raga, confidence}
+          │  PATCH /api/matches/:id {verdict, confirmedRaga?}
+          ▼
+┌──────────────────────── Next.js (App Router) ─────────────────────┐
+│  /api/matches    create + judge matches (BetterAuth session opt.)  │
+│  /api/stats      per-raga aggregates for explorer + analytics      │
+│  /api/recordings YouTube search scrape → embed video IDs (1h cache)│
+│  pages: / (hum flow) · /gallery (explorer) · /dashboard (analytics)│
+└──────────────────────────┬────────────────────────────────────────┘
+                           │ Prisma
+                           ▼
+                    ┌──────────────┐
+                    │ Neon Postgres│  users · sessions · hum_matches
+                    │  (serverless)│  (+ legacy generation tables)
+                    └──────────────┘
 ```
 
-## Setup
+## Tech stack
 
-1. `npm install`
-2. Create a free Neon Postgres DB; copy `.env.example` to `.env` and fill in:
-   - `DATABASE_URL` (Neon pooled connection string)
-   - `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL`
-   - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` — create an OAuth App at
-     https://github.com/settings/developers, callback
-     `<BETTER_AUTH_URL>/api/auth/callback/github`
-   - R2 credentials (bucket + API token in Cloudflare dashboard)
-   - `HF_API_TOKEN` — placeholder only; nothing calls it yet
-3. `npx prisma migrate dev --name init`
-4. `npm run dev`
+| Layer | Choice | Why |
+|---|---|---|
+| Framework | Next.js 14 (App Router, TS) | server + client in one free deploy |
+| Styling | Tailwind + custom design tokens | Carnatic identity: ivory/sandalwood, oxblood, antique gold; Fraunces + Source Sans 3 |
+| Pitch | [Pitchy](https://github.com/ianprime0509/pitchy) | MPM autocorrelation, ESM, zero server cost |
+| DB / ORM | Neon Postgres + Prisma | serverless, free tier |
+| Auth | BetterAuth (email/password; GitHub OAuth optional) | self-hosted, no vendor lock |
+| Recordings | YouTube search scrape + `youtube-nocookie` embeds | real performances, no API key/quota |
 
-## Deploy to Vercel
+## The matcher, honestly
 
-1. Push this repo to GitHub.
-2. Vercel → New Project → import the repo (framework preset: Next.js).
-3. Add every var from `.env.example` in Project → Settings → Environment
-   Variables (set `BETTER_AUTH_URL` to the production URL).
-4. Run `prisma migrate deploy` against the Neon DB (locally or as a one-off).
-5. In the GitHub OAuth app, add the production callback
-   `https://<app>.vercel.app/api/auth/callback/github`.
+This is a **similarity scorer, not a raga classifier**. It's transparent about limits:
 
-## Generation flow
+- It only ever returns ragas from the curated catalog — never a free-text guess.
+- Confidence = IDF-weighted on-scale energy share; it reports *relative* fit, not truth.
+- The verdict loop turns user corrections into measurable accuracy/calibration data — visible on the dashboard.
 
-`POST /api/generate` creates a `pending` job, then `generateTrack` runs in the
-background (`waitUntil`): it builds a Carnatic prompt (raga, tala beat-cycle,
-mood, genre, lyric excerpt), calls HF Inference `facebook/musicgen-small`
-(60s timeout, one retry), uploads the WAV to R2, and stores a 7-day presigned
-download URL on `generation_jobs.audio_url`. The constructed prompt and any
-error are stored on the job row (`prompt`, `error_message`).
+## Known limits & roadmap
 
-## Not yet implemented
+- Pitch-class histograms ignore **temporal structure** — two ragas with identical swara sets but different phrase grammar can't be separated yet. A pitch-transition (bigram) model is the natural next step.
+- No gamaka handling — sustained oscillation between swaras smears into both bins; vibrato-aware binning or a hidden-Markov contour model would help.
+- Melakarta↔janya ambiguity: a phrase using only a janya's swaras always also matches its parent melakarta. Scale-coverage priors could down-weight supersets.
+- Cold-start noise: the 3s Sa calibration assumes the user holds pitch steadily.
 
-- **Waveform player** — gallery uses a plain `<audio>` tag; Wavesurfer.js is
-  a next step.
-- **Analytics dashboard** — play counts are stored (`play_count`) but there's
-  no dashboard UI yet.
-- **Permanent audio URLs** — R2 objects are private; `audio_url` is a 7-day
-  presigned URL. A public bucket or a download-through API route is a follow-up.
-- Background job queue (generation currently runs via `waitUntil` on the
-  request's serverless function).
+## Development
+
+```bash
+npm install
+cp .env.example .env.local   # DATABASE_URL, BETTER_AUTH_SECRET at minimum
+npx prisma migrate deploy
+npm run dev
+```
+
+Env vars: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, optional `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` (the login button auto-hides when unset).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
