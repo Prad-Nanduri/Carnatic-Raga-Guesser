@@ -145,6 +145,25 @@ a {
   .chip {
     @apply rounded-full border px-3 py-1 text-xs transition-colors;
   }
+  .btn-record {
+    @apply inline-flex min-h-12 items-center gap-3 self-start rounded-full bg-maroon
+      pl-1.5 pr-6 text-sm font-semibold text-card shadow-[0_10px_24px_-10px_var(--maroon)]
+      transition-all hover:bg-maroon-deep active:translate-y-[1px] active:scale-[0.98];
+  }
+  .btn-record__dot {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full text-card;
+    background: color-mix(in srgb, var(--card) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card) 35%, transparent);
+  }
+  .rec-dot {
+    @apply inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-danger;
+    animation: rec-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
 }
 
 @keyframes rise {
