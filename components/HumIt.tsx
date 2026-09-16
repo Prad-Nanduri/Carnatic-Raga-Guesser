@@ -128,13 +128,23 @@ export default function HumIt({
                     hist: trackRef.current?.hist ?? [],
                   })
                 }
-                className={`w-full rounded-md border px-4 py-3 text-left text-sm ${
-                  i === 0 ? "border-maroon bg-sand" : "border-line"
+                className={`w-full rounded-md border px-4 py-3 text-left text-sm transition-all hover:-translate-y-px hover:border-bronze ${
+                  i === 0 ? "border-maroon bg-sand" : "border-line bg-card"
                 }`}
               >
-                <span className="font-medium text-ink">{c.raga}</span>
-                <span className="subtle float-right">
-                  {Math.round(c.confidence * 100)}% match
+                <span className="flex items-center justify-between gap-3">
+                  <span>
+                    <span className="mr-2 text-xs text-bronze">#{i + 1}</span>
+                    <span className="font-medium text-ink">{c.raga}</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="meter" aria-hidden="true">
+                      <span style={{ width: `${Math.round(c.confidence * 100)}%` }} />
+                    </span>
+                    <span className="subtle tabular-nums">
+                      {Math.round(c.confidence * 100)}%
+                    </span>
+                  </span>
                 </span>
               </button>
             </li>

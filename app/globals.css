@@ -125,6 +125,31 @@ a {
   .label {
     @apply text-xs font-semibold uppercase tracking-wider text-bronze;
   }
+  .swara {
+    @apply inline-flex items-center justify-center rounded-md border border-line
+      bg-sand px-2 py-0.5 text-xs font-semibold text-ink tabular-nums;
+  }
+  .swara--sa {
+    @apply border-gold text-maroon;
+    background: color-mix(in srgb, var(--gold) 14%, var(--card));
+  }
+  .meter {
+    @apply h-1.5 w-16 overflow-hidden rounded-full bg-line;
+  }
+  .meter > span {
+    @apply block h-full rounded-full bg-gold transition-[width] duration-500;
+  }
+  .rise {
+    animation: rise 0.45s ease-out both;
+  }
+  .chip {
+    @apply rounded-full border px-3 py-1 text-xs transition-colors;
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @layer utilities {
